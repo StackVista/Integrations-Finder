@@ -32,6 +32,23 @@ fi
 
 echo "Dependencies installed successfully ✓"
 
+# Ask if user wants GUI functionality
+echo ""
+read -p "Do you want to install GUI functionality? (y/N): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Installing GUI dependencies..."
+    pip3 install -r requirements-gui.txt
+    
+    if [ $? -ne 0 ]; then
+        echo "Warning: Failed to install GUI dependencies. CLI functionality will still work."
+    else
+        echo "GUI dependencies installed successfully ✓"
+    fi
+else
+    echo "GUI functionality skipped. CLI functionality is available."
+fi
+
 # Make the main script executable
 chmod +x integrations_finder.py
 

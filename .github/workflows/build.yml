@@ -2,10 +2,8 @@ name: Build and Release Cross-Platform Executables
 
 on:
   push:
-    branches: [ main, master ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
   build:
@@ -107,12 +105,27 @@ jobs:
         path: artifacts/
 
     - name: Create release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: artifacts/**/*
-        generate_release_notes: true
-        draft: false
-        prerelease: false
+      run: |
+        # Generate release notes from commits
+        RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+          --field tag_name=${{ github.ref_name }} \
+          --field target_commitish=${{ github.ref_name }} \
+          --jq .body)
+        
+        # Create release using GitHub CLI
+        gh release create ${{ github.ref_name }} \
+          --title "SUSE Observability Integrations Finder ${{ github.ref_name }}" \
+          --notes "$RELEASE_NOTES" \
+          --draft=false \
+          --prerelease=false
+        
+        # Upload artifacts to the release
+        for artifact in artifacts/*; do
+          if [ -f "$artifact" ]; then
+            echo "Uploading $artifact to release..."
+            gh release upload ${{ github.ref_name }} "$artifact"
+          fi
+        done
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,3 +1,3 @@
 requests>=2.31.0
-PyQt6>=6.5.0
 click>=8.1.0
+# PyQt6>=6.5.0  # Optional for GUI - not required for CLI functionality

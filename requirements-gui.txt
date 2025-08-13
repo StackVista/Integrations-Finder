@@ -1,0 +1,8 @@
+# GUI requirements for SUSE Observability Integrations Finder
+# Install with: pip install -r requirements-gui.txt
+
+# Core requirements
+-r requirements.txt
+
+# GUI dependencies
+PyQt6>=6.5.0
