@@ -116,6 +116,17 @@ The tool can extract 8-character git SHAs from various formats:
 - **macOS**: x86_64, aarch64 (Apple Silicon)
 - **Windows**: x86_64
 
+### Icon Support
+
+The build system supports application icons for different platforms:
+- **Linux**: PNG format (automatically handled)
+- **Windows**: ICO format (automatically converted from PNG)
+- **macOS**: ICNS format (when available)
+
+Icons are automatically detected and used based on platform requirements. The `convert_icon.py` script can be used to manually convert formats if needed.
+
+**Note**: Pillow is included in the main requirements to support icon conversion and potential future image processing features.
+
 ### Build Methods
 
 1. **Direct Build**: `python build.py <platform>-<arch>`

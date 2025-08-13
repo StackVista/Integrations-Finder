@@ -2,6 +2,12 @@
 """
 Build script for SUSE Observability Integrations Finder
 Creates cross-platform executables using PyInstaller
+
+Note: Icons are now supported with automatic format detection:
+- Windows: Uses .ico format (converted from PNG)
+- macOS: Uses .icns format (when available)
+- Linux: Uses .png format
+- Pillow is included for automatic conversion
 """
 
 import os
@@ -36,6 +42,15 @@ class Builder:
 
         # Determine target architecture for PyInstaller
         target_arch_value = "'arm64'" if target_arch == "aarch64" else "None"
+        
+        # Determine icon path based on platform
+        icon_path = None
+        if target_platform == "win":
+            icon_path = "'assets/images/logo.ico'" if Path("assets/images/logo.ico").exists() else None
+        elif target_platform == "macos":
+            icon_path = "'assets/images/logo.icns'" if Path("assets/images/logo.icns").exists() else None
+        else:  # linux
+            icon_path = "'assets/images/logo.png'" if Path("assets/images/logo.png").exists() else None
 
         spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
@@ -52,6 +67,7 @@ a = Analysis(
         'PyQt6.QtCore',
         'PyQt6.QtGui', 
         'PyQt6.QtWidgets',
+        'PyQt6.sip',
         'requests',
         'click',
     ],
@@ -83,7 +99,7 @@ exe = EXE(
     target_arch={target_arch_value},
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/images/logo.png' if '{target_platform}' == 'win' else None,
+    icon={icon_path},
 )
 
 coll = COLLECT(
@@ -102,7 +118,7 @@ if '{target_platform}' == 'macos':
     app = BUNDLE(
         coll,
         name='SUSE Observability Integrations Finder.app',
-        icon='assets/images/logo.png',
+        icon={icon_path},
         bundle_identifier='com.suse.observability.integrations-finder',
         info_plist={{
             'CFBundleName': 'SUSE Observability Integrations Finder',
