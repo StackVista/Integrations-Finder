@@ -42,7 +42,7 @@ class Builder:
 
         # Determine target architecture for PyInstaller
         target_arch_value = "'arm64'" if target_arch == "aarch64" else "None"
-        
+
         # Determine icon path based on platform
         icon_path = None
         if target_platform == "win":
@@ -209,17 +209,20 @@ if '{target_platform}' == 'macos':
             subprocess.run(cmd, check=True)
 
         elif target_platform == "win":
-            # Create zip
+            # Create zip using Python's zipfile module
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.zip"
             archive_path = output_dir / archive_name
 
-            cmd = [
-                "zip",
-                "-r",
-                str(archive_path),
-                "suse-observability-integrations-finder",
-            ]
-            subprocess.run(cmd, cwd=self.dist_dir, check=True)
+            import os
+            import zipfile
+
+            with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                source_dir = self.dist_dir / "suse-observability-integrations-finder"
+                for root, dirs, files in os.walk(source_dir):
+                    for file in files:
+                        file_path = Path(root) / file
+                        arcname = file_path.relative_to(self.dist_dir)
+                        zipf.write(file_path, arcname)
 
         print(f"Package created: {archive_path}")
         return True

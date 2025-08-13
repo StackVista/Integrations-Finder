@@ -133,6 +133,8 @@ Icons are automatically detected and used based on platform requirements. The `c
 2. **Docker Build**: `./build-docker.sh <platform>-<arch>`
 3. **Makefile**: `make build-<platform>-<arch>`
 
+**Note**: Windows builds use Python's built-in `zipfile` module for packaging, ensuring compatibility across all Windows environments.
+
 ### Quick Build Commands
 
 ```bash
