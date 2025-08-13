@@ -11,11 +11,10 @@ import sys
 import webbrowser
 from typing import Optional, Tuple
 
-
 import click
 import requests
-from PyQt6.QtCore import QThread, QUrl, pyqtSignal, Qt
-from PyQt6.QtGui import QDesktopServices, QPixmap, QFont
+from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -245,7 +244,7 @@ class IntegrationsFinder:
         if not commit_info:
             return False, f"Could not find agent commit with SHA: {sha}"
 
-        print("Found SUSE Observability agent commit: {}".format(commit_info.get('html_url', 'N/A')))
+        print("Found SUSE Observability agent commit: {}".format(commit_info.get("html_url", "N/A")))
 
         # Get integrations version from stackstate-deps.json
         integrations_version = self.get_stackstate_deps(sha)
