@@ -14,11 +14,21 @@ from urllib.parse import urljoin
 
 import click
 import requests
-from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
-from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
-from PyQt6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
-                             QMainWindow, QMessageBox, QProgressBar,
-                             QPushButton, QTextEdit, QVBoxLayout, QWidget)
+from PyQt6.QtCore import QThread, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class IntegrationsFinder:
@@ -29,9 +39,7 @@ class IntegrationsFinder:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update(
-            {"User-Agent": "SUSE-Observability-Integrations-Finder/1.0"}
-        )
+        self.session.headers.update({"User-Agent": "SUSE-Observability-Integrations-Finder/1.0"})
 
     def extract_sha(self, input_string: str) -> Optional[str]:
         """
@@ -237,9 +245,7 @@ class IntegrationsFinder:
         if not commit_info:
             return False, f"Could not find agent commit with SHA: {sha}"
 
-        print(
-            f"Found SUSE Observability agent commit: {commit_info.get('html_url', 'N/A')}"
-        )
+        print(f"Found SUSE Observability agent commit: {commit_info.get('html_url', 'N/A')}")
 
         # Get integrations version from stackstate-deps.json
         integrations_version = self.get_stackstate_deps(sha)
@@ -373,13 +379,9 @@ class IntegrationsFinderGUI(QMainWindow):
             logo_pixmap = QPixmap("assets/images/logo.png")
             if not logo_pixmap.isNull():
                 # Scale the logo to a reasonable size (e.g., 100px height)
-                scaled_pixmap = logo_pixmap.scaledToHeight(
-                    60, Qt.TransformationMode.SmoothTransformation
-                )
+                scaled_pixmap = logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation)
                 logo_label.setPixmap(scaled_pixmap)
-                logo_label.setAlignment(
-                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                )
+                logo_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             else:
                 logo_label.setText("")  # Empty if image fails to load
         except Exception:
@@ -412,9 +414,7 @@ class IntegrationsFinderGUI(QMainWindow):
         input_layout = QHBoxLayout()
         input_label = QLabel("SUSE Observability Agent SHA or Container Path:")
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText(
-            "e.g., a1b2c3d4 or quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4"
-        )
+        self.input_field.setPlaceholderText("e.g., a1b2c3d4 or quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4")
         input_layout.addWidget(input_label)
         input_layout.addWidget(self.input_field)
         layout.addLayout(input_layout)
@@ -473,9 +473,7 @@ class IntegrationsFinderGUI(QMainWindow):
         self.progress_bar.setVisible(False)
 
         # Check if this is a branch version and show/hide warning
-        is_branch = (
-            "DEVELOPMENT BRANCH" in message or "[BRANCH_VERSION_DETECTED]" in message
-        )
+        is_branch = "DEVELOPMENT BRANCH" in message or "[BRANCH_VERSION_DETECTED]" in message
         self.warning_label.setVisible(is_branch)
 
         # Reset button styling
@@ -495,10 +493,7 @@ class IntegrationsFinderGUI(QMainWindow):
                 for line in lines:
                     if "Integrations Commit:" in line or "URL:" in line:
                         url_match = re.search(r"URL: (https://[^\s]+)", line)
-                        if (
-                            url_match
-                            and "stackstate-agent-integrations" in url_match.group(1)
-                        ):
+                        if url_match and "stackstate-agent-integrations" in url_match.group(1):
                             self.current_url = url_match.group(1)
                             self.open_url_button.setEnabled(True)
 
@@ -557,27 +552,18 @@ def find(input_string):
             for line in lines:
                 if "Integrations Commit:" in line and "URL:" in line:
                     url_match = re.search(r"URL: (https://[^\s]+)", line)
-                    if (
-                        url_match
-                        and "stackstate-agent-integrations" in url_match.group(1)
-                    ):
+                    if url_match and "stackstate-agent-integrations" in url_match.group(1):
                         url = url_match.group(1)
                         print(f"\nQuick access URL: {url}")
 
                         # Add warning if it's a branch version
                         if is_branch:
-                            print(
-                                "\n⚠️  WARNING: This integrations version appears to be a development branch!"
-                            )
-                            print(
-                                "   You are working with an unofficial/unreleased development version."
-                            )
+                            print("\n⚠️  WARNING: This integrations version appears to be a development branch!")
+                            print("   You are working with an unofficial/unreleased development version.")
 
                         # Ask if user wants to open in browser
                         try:
-                            open_browser = (
-                                input("\nOpen URL in browser? (y/N): ").strip().lower()
-                            )
+                            open_browser = input("\nOpen URL in browser? (y/N): ").strip().lower()
                             if open_browser in ["y", "yes"]:
                                 webbrowser.open(url)
                         except KeyboardInterrupt:

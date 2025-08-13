@@ -16,9 +16,7 @@ try:
 except ImportError as e:
     if "PyQt6" in str(e):
         print("⚠️  PyQt6 not available in CI environment - skipping GUI tests")
-        print(
-            "   This is expected in CI. GUI functionality will be tested in local development."
-        )
+        print("   This is expected in CI. GUI functionality will be tested in local development.")
         sys.exit(0)
     else:
         raise
