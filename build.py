@@ -5,10 +5,10 @@ Creates cross-platform executables using PyInstaller
 """
 
 import os
-import sys
 import platform
-import subprocess
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -34,7 +34,7 @@ class Builder:
         """Create PyInstaller spec file for the target platform"""
         print(f"Creating spec file for {target_platform}-{target_arch}...")
 
-        spec_content = f'''# -*- mode: python ; coding: utf-8 -*-
+        spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
 
@@ -109,9 +109,9 @@ if '{target_platform}' == 'macos':
             'NSHighResolutionCapable': True,
         }},
     )
-'''
+"""
 
-        with open(self.spec_file, 'w') as f:
+        with open(self.spec_file, "w") as f:
             f.write(spec_content)
 
         print(f"Spec file created: {self.spec_file}")
@@ -125,19 +125,21 @@ if '{target_platform}' == 'macos':
 
         # Build command
         cmd = [
-            sys.executable, '-m', 'PyInstaller',
-            '--clean',
-            '--noconfirm',
-            str(self.spec_file)
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--clean",
+            "--noconfirm",
+            str(self.spec_file),
         ]
 
         # Platform-specific options
-        if target_platform == 'linux':
-            cmd.extend(['--target-arch', target_arch])
-        elif target_platform == 'macos':
-            cmd.extend(['--target-arch', target_arch])
-        elif target_platform == 'win':
-            cmd.extend(['--target-arch', target_arch])
+        if target_platform == "linux":
+            cmd.extend(["--target-arch", target_arch])
+        elif target_platform == "macos":
+            cmd.extend(["--target-arch", target_arch])
+        elif target_platform == "win":
+            cmd.extend(["--target-arch", target_arch])
 
         print(f"Running: {' '.join(cmd)}")
 
@@ -165,28 +167,47 @@ if '{target_platform}' == 'macos':
         output_dir.mkdir(exist_ok=True)
 
         # Package based on platform
-        if target_platform == 'linux':
+        if target_platform == "linux":
             # Create tar.gz
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
 
-            cmd = ['tar', '-czf', str(archive_path), '-C', str(self.dist_dir), 'suse-observability-integrations-finder']
+            cmd = [
+                "tar",
+                "-czf",
+                str(archive_path),
+                "-C",
+                str(self.dist_dir),
+                "suse-observability-integrations-finder",
+            ]
             subprocess.run(cmd, check=True)
 
-        elif target_platform == 'macos':
+        elif target_platform == "macos":
             # Create .dmg or .tar.gz
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
 
-            cmd = ['tar', '-czf', str(archive_path), '-C', str(self.dist_dir), 'suse-observability-integrations-finder']
+            cmd = [
+                "tar",
+                "-czf",
+                str(archive_path),
+                "-C",
+                str(self.dist_dir),
+                "suse-observability-integrations-finder",
+            ]
             subprocess.run(cmd, check=True)
 
-        elif target_platform == 'win':
+        elif target_platform == "win":
             # Create zip
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.zip"
             archive_path = output_dir / archive_name
 
-            cmd = ['zip', '-r', str(archive_path), 'suse-observability-integrations-finder']
+            cmd = [
+                "zip",
+                "-r",
+                str(archive_path),
+                "suse-observability-integrations-finder",
+            ]
             subprocess.run(cmd, cwd=self.dist_dir, check=True)
 
         print(f"Package created: {archive_path}")
@@ -195,7 +216,7 @@ if '{target_platform}' == 'macos':
 
 def main():
     """Main build function"""
-    if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help', 'help']:
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
         print("Usage: python build.py <target>")
         print("Targets:")
         print("  linux-x86_64")
@@ -214,14 +235,14 @@ def main():
     builder = Builder()
 
     targets = {
-        'linux-x86_64': ('linux', 'x86_64'),
-        'linux-aarch64': ('linux', 'aarch64'),
-        'macos-x86_64': ('macos', 'x86_64'),
-        'macos-aarch64': ('macos', 'aarch64'),
-        'win-x86_64': ('win', 'x86_64'),
+        "linux-x86_64": ("linux", "x86_64"),
+        "linux-aarch64": ("linux", "aarch64"),
+        "macos-x86_64": ("macos", "x86_64"),
+        "macos-aarch64": ("macos", "aarch64"),
+        "win-x86_64": ("win", "x86_64"),
     }
 
-    if target == 'all':
+    if target == "all":
         build_targets = targets.values()
     elif target in targets:
         build_targets = [targets[target]]

@@ -69,7 +69,9 @@ def main():
     print("Example with real data:")
 
 
-print("  python3 integrations_finder.py find quay.io/stackstate/stackstate-k8s-agent:8be54df8")
+print(
+    "  python3 integrations_finder.py find quay.io/stackstate/stackstate-k8s-agent:8be54df8"
+)
 
 if __name__ == "__main__":
     main()

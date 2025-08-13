@@ -5,20 +5,30 @@ SUSE Observability Integrations Finder
 A tool to trace from SUSE Observability Agent container tags to the corresponding integrations source code.
 """
 
+import json
 import re
 import sys
-import json
 import webbrowser
 from typing import Optional, Tuple
 from urllib.parse import urljoin
 
-import requests
 import click
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
-                             QWidget, QLabel, QLineEdit, QPushButton, QTextEdit,
-                             QMessageBox, QProgressBar)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl
-from PyQt6.QtGui import QFont, QDesktopServices, QPixmap
+import requests
+from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
+from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class IntegrationsFinder:
@@ -29,35 +39,35 @@ class IntegrationsFinder:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'SUSE-Observability-Integrations-Finder/1.0'
-        })
+        self.session.headers.update(
+            {"User-Agent": "SUSE-Observability-Integrations-Finder/1.0"}
+        )
 
     def extract_sha(self, input_string: str) -> Optional[str]:
         """
         Extract 8-character git SHA from various input formats.
-        
+
         Args:
             input_string: Input string that may contain a SHA
-            
+
         Returns:
             8-character SHA if found, None otherwise
         """
         # Pattern to match 8-character hex strings (git short SHA)
-        sha_pattern = r'[a-fA-F0-9]{8}'
+        sha_pattern = r"[a-fA-F0-9]{8}"
 
         # If input is already 8 characters and looks like a SHA, return it
         if len(input_string) == 8 and re.match(sha_pattern, input_string):
             return input_string
 
         # Look for SHA in container tag format (e.g., 7.51.1-a1b2c3d4 or quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4)
-        container_pattern = r'[0-9]+\.[0-9]+\.[0-9]+-([a-fA-F0-9]{8})'
+        container_pattern = r"[0-9]+\.[0-9]+\.[0-9]+-([a-fA-F0-9]{8})"
         match = re.search(container_pattern, input_string)
         if match:
             return match.group(1)
 
         # Look for SHA in quay.io format (e.g., quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4)
-        quay_pattern = r'quay\.io/stackstate/stackstate-k8s-agent:([a-fA-F0-9]{8})'
+        quay_pattern = r"quay\.io/stackstate/stackstate-k8s-agent:([a-fA-F0-9]{8})"
         match = re.search(quay_pattern, input_string)
         if match:
             return match.group(1)
@@ -72,10 +82,10 @@ class IntegrationsFinder:
     def get_agent_commit(self, sha: str) -> Optional[dict]:
         """
         Fetch agent commit information from GitHub.
-        
+
         Args:
             sha: 8-character git SHA
-            
+
         Returns:
             Commit information dict or None if not found
         """
@@ -104,10 +114,10 @@ class IntegrationsFinder:
     def get_integrations_commit(self, version: str) -> Optional[dict]:
         """
         Fetch integrations commit information from GitHub.
-        
+
         Args:
             version: Integrations version (branch or tag)
-            
+
         Returns:
             Commit information dict or None if not found
         """
@@ -137,10 +147,10 @@ class IntegrationsFinder:
     def is_branch_version(self, version: str) -> bool:
         """
         Check if the integrations version is a branch (not a tag).
-        
+
         Args:
             version: Integrations version string
-            
+
         Returns:
             True if it's a branch, False if it's a tag
         """
@@ -167,10 +177,10 @@ class IntegrationsFinder:
     def get_stackstate_deps(self, sha: str) -> Optional[str]:
         """
         Fetch stackstate-deps.json file content from the agent repository.
-        
+
         Args:
             sha: 8-character git SHA
-            
+
         Returns:
             Integrations version string or None if not found
         """
@@ -185,7 +195,8 @@ class IntegrationsFinder:
                 if content.get("type") == "file":
                     # Decode base64 content
                     import base64
-                    file_content = base64.b64decode(content["content"]).decode('utf-8')
+
+                    file_content = base64.b64decode(content["content"]).decode("utf-8")
                     deps_data = json.loads(file_content)
                     return deps_data.get("STACKSTATE_INTEGRATIONS_VERSION")
 
@@ -205,10 +216,10 @@ class IntegrationsFinder:
     def build_integrations_url(self, integrations_version: str) -> str:
         """
         Build GitHub URL for the integrations repository at the specified version.
-        
+
         Args:
             integrations_version: Version string (branch or tag)
-            
+
         Returns:
             GitHub URL for the integrations repository
         """
@@ -217,10 +228,10 @@ class IntegrationsFinder:
     def find_integrations(self, input_string: str) -> Tuple[bool, str]:
         """
         Main method to find integrations source code from input.
-        
+
         Args:
             input_string: Input string containing SHA or container path
-            
+
         Returns:
             Tuple of (success: bool, message: str)
         """
@@ -236,12 +247,17 @@ class IntegrationsFinder:
         if not commit_info:
             return False, f"Could not find agent commit with SHA: {sha}"
 
-        print(f"Found SUSE Observability agent commit: {commit_info.get('html_url', 'N/A')}")
+        print(
+            f"Found SUSE Observability agent commit: {commit_info.get('html_url', 'N/A')}"
+        )
 
         # Get integrations version from stackstate-deps.json
         integrations_version = self.get_stackstate_deps(sha)
         if not integrations_version:
-            return False, f"Could not find integrations version in stackstate-deps.json for SHA: {sha}"
+            return (
+                False,
+                f"Could not find integrations version in stackstate-deps.json for SHA: {sha}",
+            )
 
         print(f"Found integrations version: {integrations_version}")
 
@@ -367,9 +383,13 @@ class IntegrationsFinderGUI(QMainWindow):
             logo_pixmap = QPixmap("assets/images/logo.png")
             if not logo_pixmap.isNull():
                 # Scale the logo to a reasonable size (e.g., 100px height)
-                scaled_pixmap = logo_pixmap.scaledToHeight(60, Qt.TransformationMode.SmoothTransformation)
+                scaled_pixmap = logo_pixmap.scaledToHeight(
+                    60, Qt.TransformationMode.SmoothTransformation
+                )
                 logo_label.setPixmap(scaled_pixmap)
-                logo_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                logo_label.setAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
             else:
                 logo_label.setText("")  # Empty if image fails to load
         except Exception:
@@ -380,16 +400,19 @@ class IntegrationsFinderGUI(QMainWindow):
 
         # Description
         desc = QLabel(
-            "Enter a SUSE Observability agent container tag or SHA to find the corresponding integrations source code")
+            "Enter a SUSE Observability agent container tag or SHA to find the corresponding integrations source code"
+        )
         desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
         # Warning label for development versions (initially hidden)
         self.warning_label = QLabel(
-            "⚠️ WARNING: You are working with an unofficial/unreleased development version of the integrations")
+            "⚠️ WARNING: You are working with an unofficial/unreleased development version of the integrations"
+        )
         self.warning_label.setStyleSheet(
-            "color: red; font-weight: bold; background-color: #ffe6e6; padding: 8px; border: 2px solid red; border-radius: 4px;")
+            "color: red; font-weight: bold; background-color: #ffe6e6; padding: 8px; border: 2px solid red; border-radius: 4px;"
+        )
         self.warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.warning_label.setWordWrap(True)
         self.warning_label.setVisible(False)
@@ -399,7 +422,9 @@ class IntegrationsFinderGUI(QMainWindow):
         input_layout = QHBoxLayout()
         input_label = QLabel("SUSE Observability Agent SHA or Container Path:")
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText("e.g., a1b2c3d4 or quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4")
+        self.input_field.setPlaceholderText(
+            "e.g., a1b2c3d4 or quay.io/stackstate/stackstate-k8s-agent:a1b2c3d4"
+        )
         input_layout.addWidget(input_label)
         input_layout.addWidget(self.input_field)
         layout.addLayout(input_layout)
@@ -433,8 +458,11 @@ class IntegrationsFinderGUI(QMainWindow):
         """Find integrations source code."""
         input_string = self.input_field.text().strip()
         if not input_string:
-            QMessageBox.warning(self, "Input Required",
-                                "Please enter a SUSE Observability agent SHA or container path.")
+            QMessageBox.warning(
+                self,
+                "Input Required",
+                "Please enter a SUSE Observability agent SHA or container path.",
+            )
             return
 
         # Disable UI during search
@@ -455,7 +483,9 @@ class IntegrationsFinderGUI(QMainWindow):
         self.progress_bar.setVisible(False)
 
         # Check if this is a branch version and show/hide warning
-        is_branch = "DEVELOPMENT BRANCH" in message or "[BRANCH_VERSION_DETECTED]" in message
+        is_branch = (
+            "DEVELOPMENT BRANCH" in message or "[BRANCH_VERSION_DETECTED]" in message
+        )
         self.warning_label.setVisible(is_branch)
 
         # Reset button styling
@@ -468,20 +498,24 @@ class IntegrationsFinderGUI(QMainWindow):
         self.current_url = None
         if success:
             # Extract URL from message - look for the integrations URL
-            url_match = re.search(r'URL: (https://[^\s]+)', message)
+            url_match = re.search(r"URL: (https://[^\s]+)", message)
             if url_match:
                 # Find the integrations URL specifically
-                lines = message.split('\n')
+                lines = message.split("\n")
                 for line in lines:
-                    if 'Integrations Commit:' in line or 'URL:' in line:
-                        url_match = re.search(r'URL: (https://[^\s]+)', line)
-                        if url_match and 'stackstate-agent-integrations' in url_match.group(1):
+                    if "Integrations Commit:" in line or "URL:" in line:
+                        url_match = re.search(r"URL: (https://[^\s]+)", line)
+                        if (
+                            url_match
+                            and "stackstate-agent-integrations" in url_match.group(1)
+                        ):
                             self.current_url = url_match.group(1)
                             self.open_url_button.setEnabled(True)
 
                             # Add red border if it's a branch version
                             if is_branch:
-                                self.open_url_button.setStyleSheet("""
+                                self.open_url_button.setStyleSheet(
+                                    """
                                     QPushButton {
                                         border: 3px solid red;
                                         border-radius: 5px;
@@ -492,7 +526,8 @@ class IntegrationsFinderGUI(QMainWindow):
                                     QPushButton:hover {
                                         background-color: #ffcccc;
                                     }
-                                """)
+                                """
+                                )
                             break
 
     def open_url(self):
@@ -510,7 +545,7 @@ def cli():
 
 
 @cli.command()
-@click.argument('input_string')
+@click.argument("input_string")
 def find(input_string):
     """Find integrations source code from SUSE Observability agent SHA or container path."""
     finder = IntegrationsFinder()
@@ -525,26 +560,35 @@ def find(input_string):
 
     if success:
         # Extract URL for easy copying
-        url_match = re.search(r'URL: (https://[^\s]+)', message)
+        url_match = re.search(r"URL: (https://[^\s]+)", message)
         if url_match:
             # Find the integrations URL specifically
-            lines = message.split('\n')
+            lines = message.split("\n")
             for line in lines:
-                if 'Integrations Commit:' in line and 'URL:' in line:
-                    url_match = re.search(r'URL: (https://[^\s]+)', line)
-                    if url_match and 'stackstate-agent-integrations' in url_match.group(1):
+                if "Integrations Commit:" in line and "URL:" in line:
+                    url_match = re.search(r"URL: (https://[^\s]+)", line)
+                    if (
+                        url_match
+                        and "stackstate-agent-integrations" in url_match.group(1)
+                    ):
                         url = url_match.group(1)
                         print(f"\nQuick access URL: {url}")
 
                         # Add warning if it's a branch version
                         if is_branch:
-                            print("\n⚠️  WARNING: This integrations version appears to be a development branch!")
-                            print("   You are working with an unofficial/unreleased development version.")
+                            print(
+                                "\n⚠️  WARNING: This integrations version appears to be a development branch!"
+                            )
+                            print(
+                                "   You are working with an unofficial/unreleased development version."
+                            )
 
                         # Ask if user wants to open in browser
                         try:
-                            open_browser = input("\nOpen URL in browser? (y/N): ").strip().lower()
-                            if open_browser in ['y', 'yes']:
+                            open_browser = (
+                                input("\nOpen URL in browser? (y/N): ").strip().lower()
+                            )
+                            if open_browser in ["y", "yes"]:
                                 webbrowser.open(url)
                         except KeyboardInterrupt:
                             pass

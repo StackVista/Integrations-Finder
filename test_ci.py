@@ -4,8 +4,8 @@ CI-specific tests for SUSE Observability Integrations Finder
 This version doesn't import PyQt6 to avoid GUI dependencies in CI
 """
 
-import sys
 import os
+import sys
 
 # Add the current directory to the path so we can import the core functionality
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -16,7 +16,9 @@ try:
 except ImportError as e:
     if "PyQt6" in str(e):
         print("⚠️  PyQt6 not available in CI environment - skipping GUI tests")
-        print("   This is expected in CI. GUI functionality will be tested in local development.")
+        print(
+            "   This is expected in CI. GUI functionality will be tested in local development."
+        )
         sys.exit(0)
     else:
         raise
@@ -94,6 +96,7 @@ def test_cli_functionality():
     # Test that we can import the CLI module
     try:
         import click
+
         print("✅ Click library imported successfully")
     except ImportError as e:
         print(f"❌ Click library import failed: {e}")
