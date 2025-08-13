@@ -10,12 +10,12 @@ import re
 import sys
 import webbrowser
 from typing import Optional, Tuple
-from urllib.parse import urljoin
+
 
 import click
 import requests
-from PyQt6.QtCore import QThread, QUrl, pyqtSignal
-from PyQt6.QtGui import QDesktopServices, QPixmap
+from PyQt6.QtCore import QThread, QUrl, pyqtSignal, Qt
+from PyQt6.QtGui import QDesktopServices, QPixmap, QFont
 from PyQt6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -121,7 +121,7 @@ class IntegrationsFinder:
         """
         try:
             # Try GitHub API to get the latest commit for this version
-            api_url = f"https://api.github.com/repos/StackVista/stackstate-agent-integrations/commits"
+            api_url = "https://api.github.com/repos/StackVista/stackstate-agent-integrations/commits"
             params = {"sha": version, "per_page": 1}
             response = self.session.get(api_url, params=params)
 
@@ -131,7 +131,7 @@ class IntegrationsFinder:
                     return commits[0]
 
             # Fallback: try to get commit info for the version directly
-            api_url = f"https://api.github.com/repos/StackVista/stackstate-agent-integrations/commits/{version}"
+            api_url = "https://api.github.com/repos/StackVista/stackstate-agent-integrations/commits/{}".format(version)
             response = self.session.get(api_url)
 
             if response.status_code == 200:
@@ -154,7 +154,7 @@ class IntegrationsFinder:
         """
         try:
             # Check if it's a tag by trying to get tag info
-            api_url = f"https://api.github.com/repos/StackVista/stackstate-agent-integrations/tags"
+            api_url = "https://api.github.com/repos/StackVista/stackstate-agent-integrations/tags"
             response = self.session.get(api_url)
 
             if response.status_code == 200:
@@ -184,7 +184,7 @@ class IntegrationsFinder:
         """
         try:
             # Try GitHub API to get file content
-            api_url = f"https://api.github.com/repos/StackVista/stackstate-agent/contents/stackstate-deps.json"
+            api_url = "https://api.github.com/repos/StackVista/stackstate-agent/contents/stackstate-deps.json"
             params = {"ref": sha}
             response = self.session.get(api_url, params=params)
 
@@ -199,7 +199,7 @@ class IntegrationsFinder:
                     return deps_data.get("STACKSTATE_INTEGRATIONS_VERSION")
 
             # Fallback: try raw GitHub URL
-            raw_url = f"https://raw.githubusercontent.com/StackVista/stackstate-agent/{sha}/stackstate-deps.json"
+            raw_url = "https://raw.githubusercontent.com/StackVista/stackstate-agent/{}/stackstate-deps.json".format(sha)
             response = self.session.get(raw_url)
 
             if response.status_code == 200:
@@ -245,7 +245,7 @@ class IntegrationsFinder:
         if not commit_info:
             return False, f"Could not find agent commit with SHA: {sha}"
 
-        print(f"Found SUSE Observability agent commit: {commit_info.get('html_url', 'N/A')}")
+        print("Found SUSE Observability agent commit: {}".format(commit_info.get('html_url', 'N/A')))
 
         # Get integrations version from stackstate-deps.json
         integrations_version = self.get_stackstate_deps(sha)
@@ -255,7 +255,7 @@ class IntegrationsFinder:
                 f"Could not find integrations version in stackstate-deps.json for SHA: {sha}",
             )
 
-        print(f"Found integrations version: {integrations_version}")
+        print("Found integrations version: {}".format(integrations_version))
 
         # Get integrations commit information
         integrations_commit_info = self.get_integrations_commit(integrations_version)
@@ -289,9 +289,11 @@ class IntegrationsFinder:
         # Add warning if it's a branch version
         branch_warning = ""
         if is_branch:
-            branch_warning = f"""
-⚠️  WARNING: This integrations version ({integrations_version}) appears to be a development branch, not a released tag.
-   This means you're working with an unofficial/unreleased development version of the integrations."""
+            branch_warning = """
+⚠️  WARNING: This integrations version ({}) appears to be a development branch, not a released tag.
+   This means you're working with an unofficial/unreleased development version of the integrations.""".format(
+                integrations_version
+            )
 
         success_message = f"""Success! Found integrations source code:{branch_warning}
 
@@ -403,7 +405,8 @@ class IntegrationsFinderGUI(QMainWindow):
             "⚠️ WARNING: You are working with an unofficial/unreleased development version of the integrations"
         )
         self.warning_label.setStyleSheet(
-            "color: red; font-weight: bold; background-color: #ffe6e6; padding: 8px; border: 2px solid red; border-radius: 4px;"
+            "color: red; font-weight: bold; background-color: #ffe6e6; "
+            "padding: 8px; border: 2px solid red; border-radius: 4px;"
         )
         self.warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.warning_label.setWordWrap(True)
