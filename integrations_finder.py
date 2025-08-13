@@ -16,19 +16,9 @@ import click
 import requests
 from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
 from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
-from PyQt6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
+                             QMainWindow, QMessageBox, QProgressBar,
+                             QPushButton, QTextEdit, QVBoxLayout, QWidget)
 
 
 class IntegrationsFinder:
