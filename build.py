@@ -25,6 +25,10 @@ class Builder:
         self.build_dir = self.project_root / "build"
         self.spec_file = self.project_root / "integrations_finder.spec"
 
+    def get_platform_dist_dir(self, target_platform, target_arch):
+        """Get platform-specific dist directory"""
+        return self.dist_dir / target_platform / target_arch
+
     def clean(self):
         """Clean build artifacts"""
         print("Cleaning build artifacts...")
@@ -43,10 +47,13 @@ class Builder:
         # Determine target architecture for PyInstaller
         target_arch_value = "'arm64'" if target_arch == "aarch64" else "None"
 
-        # Determine icon path based on platform
+        # Determine icon path and executable name based on platform
         icon_path = None
+        exe_name = "agent-integrations-finder"
+
         if target_platform == "win":
             icon_path = "'assets/images/logo.ico'" if Path("assets/images/logo.ico").exists() else None
+            exe_name = "agent-integrations-finder.exe"
         elif target_platform == "macos":
             icon_path = "'assets/images/logo.icns'" if Path("assets/images/logo.icns").exists() else None
         else:  # linux
@@ -88,7 +95,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='suse-observability-integrations-finder',
+    name='{exe_name}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -110,19 +117,19 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='suse-observability-integrations-finder',
+    name='agent-integrations-finder',
 )
 
 # For macOS, create .app bundle
 if '{target_platform}' == 'macos':
     app = BUNDLE(
         coll,
-        name='SUSE Observability Integrations Finder.app',
+        name='Agent Integrations Finder.app',
         icon={icon_path},
-        bundle_identifier='com.suse.observability.integrations-finder',
+        bundle_identifier='com.suse.observability.agent-integrations-finder',
         info_plist={{
-            'CFBundleName': 'SUSE Observability Integrations Finder',
-            'CFBundleDisplayName': 'SUSE Observability Integrations Finder',
+            'CFBundleName': 'Agent Integrations Finder',
+            'CFBundleDisplayName': 'Agent Integrations Finder',
             'CFBundleVersion': '1.0.0',
             'CFBundleShortVersionString': '1.0.0',
             'NSHighResolutionCapable': True,
@@ -142,13 +149,19 @@ if '{target_platform}' == 'macos':
         # Create spec file
         self.create_spec_file(target_platform, target_arch)
 
-        # Build command - no need for --target-arch when using spec file
+        # Get platform-specific dist directory
+        platform_dist_dir = self.get_platform_dist_dir(target_platform, target_arch)
+        platform_dist_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build command with platform-specific dist directory
         cmd = [
             sys.executable,
             "-m",
             "PyInstaller",
             "--clean",
             "--noconfirm",
+            "--distpath",
+            str(platform_dist_dir),
             str(self.spec_file),
         ]
 
@@ -168,7 +181,11 @@ if '{target_platform}' == 'macos':
         """Package the built executable"""
         print(f"Packaging for {target_platform}-{target_arch}...")
 
-        source_dir = self.dist_dir / "suse-observability-integrations-finder"
+        # Get platform-specific dist directory
+        platform_dist_dir = self.get_platform_dist_dir(target_platform, target_arch)
+        dir_name = "agent-integrations-finder"
+
+        source_dir = platform_dist_dir / dir_name
         if not source_dir.exists():
             print(f"Error: Build directory not found: {source_dir}")
             return False
@@ -180,7 +197,7 @@ if '{target_platform}' == 'macos':
         # Package based on platform
         if target_platform == "linux":
             # Create tar.gz
-            archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
+            archive_name = f"agent-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
 
             cmd = [
@@ -188,14 +205,14 @@ if '{target_platform}' == 'macos':
                 "-czf",
                 str(archive_path),
                 "-C",
-                str(self.dist_dir),
-                "suse-observability-integrations-finder",
+                str(platform_dist_dir),
+                dir_name,
             ]
             subprocess.run(cmd, check=True)
 
         elif target_platform == "macos":
             # Create .dmg or .tar.gz
-            archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
+            archive_name = f"agent-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
 
             cmd = [
@@ -203,25 +220,25 @@ if '{target_platform}' == 'macos':
                 "-czf",
                 str(archive_path),
                 "-C",
-                str(self.dist_dir),
-                "suse-observability-integrations-finder",
+                str(platform_dist_dir),
+                dir_name,
             ]
             subprocess.run(cmd, check=True)
 
         elif target_platform == "win":
             # Create zip using Python's zipfile module
-            archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.zip"
+            archive_name = f"agent-integrations-finder-{target_platform}-{target_arch}.zip"
             archive_path = output_dir / archive_name
 
             import os
             import zipfile
 
             with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                source_dir = self.dist_dir / "suse-observability-integrations-finder"
+                source_dir = platform_dist_dir / dir_name
                 for root, dirs, files in os.walk(source_dir):
                     for file in files:
                         file_path = Path(root) / file
-                        arcname = file_path.relative_to(self.dist_dir)
+                        arcname = file_path.relative_to(platform_dist_dir)
                         zipf.write(file_path, arcname)
 
         print(f"Package created: {archive_path}")

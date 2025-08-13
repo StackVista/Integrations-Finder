@@ -341,7 +341,7 @@ class WorkerThread(QThread):
 
 
 class IntegrationsFinderGUI(QMainWindow):
-    """GUI for the SUSE Observability Integrations Finder tool."""
+    """GUI for the Agent Integrations Finder tool."""
 
     def __init__(self):
         super().__init__()
@@ -350,7 +350,7 @@ class IntegrationsFinderGUI(QMainWindow):
 
     def init_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle("SUSE Observability Integrations Finder")
+        self.setWindowTitle("Agent Integrations Finder")
         self.setGeometry(600, 400, 800, 500)
 
         # Central widget
@@ -366,7 +366,7 @@ class IntegrationsFinderGUI(QMainWindow):
         header_layout = QHBoxLayout()
 
         # Title (left side)
-        title = QLabel("SUSE Observability Integrations Finder")
+        title = QLabel("Agent Integrations Finder")
         title.setFont(QFont("Arial", 16, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         header_layout.addWidget(title)
@@ -527,7 +527,7 @@ class IntegrationsFinderGUI(QMainWindow):
 
 @click.group()
 def cli():
-    """SUSE Observability Integrations Finder - Trace from agent container tags to integrations source code."""
+    """Agent Integrations Finder - Trace from agent container tags to integrations source code."""
     pass
 
 
