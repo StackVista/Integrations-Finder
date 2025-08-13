@@ -9,7 +9,7 @@ from integrations_finder import IntegrationsFinder
 def test_sha_extraction():
     """Test SHA extraction from various input formats."""
     finder = IntegrationsFinder()
-    
+
     test_cases = [
         ("a1b2c3d4", "a1b2c3d4"),
         ("stackstate/agent:7.51.1-a1b2c3d4", "a1b2c3d4"),
@@ -19,7 +19,7 @@ def test_sha_extraction():
         ("invalid-input", None),
         ("", None),
     ]
-    
+
     print("Testing SHA extraction:")
     for input_str, expected in test_cases:
         result = finder.extract_sha(input_str)
@@ -30,13 +30,13 @@ def test_sha_extraction():
 def test_integrations_finder():
     """Test the complete integrations finder workflow."""
     finder = IntegrationsFinder()
-    
+
     # Test with a sample input (this will fail if the SHA doesn't exist)
     test_input = "a1b2c3d4"  # This is a dummy SHA for testing
-    
+
     print(f"\nTesting complete workflow with: {test_input}")
     result = finder.find_integrations(test_input)
-    
+
     if len(result) == 3:
         success, message, is_branch = result
         print(f"Success: {success}")
@@ -51,7 +51,7 @@ def test_integrations_finder():
 def test_branch_detection():
     """Test branch detection functionality."""
     finder = IntegrationsFinder()
-    
+
     # Test known tags
     known_tags = ["7.51.1-3", "7.51.1", "v1.0.0"]
     print("\nTesting branch detection with known tags:")
@@ -59,7 +59,7 @@ def test_branch_detection():
         is_branch = finder.is_branch_version(tag)
         status = "BRANCH" if is_branch else "TAG"
         print(f"  {tag}: {status}")
-    
+
     # Test likely branches
     likely_branches = ["main", "master", "develop", "feature-branch"]
     print("\nTesting branch detection with likely branches:")
