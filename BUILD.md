@@ -198,8 +198,8 @@ The project includes two GitHub Actions workflows:
 #### Automated Release
 1. **Create a tag**: `git tag v1.0.0 && git push origin v1.0.0`
 2. **Automatic build**: GitHub Actions builds all platform executables
-3. **Automatic release**: Creates GitHub release with downloadable packages
-4. **Release notes**: Automatically generated from commits
+3. **Automatic release**: Creates GitHub release with downloadable packages using GitHub CLI
+4. **Release notes**: Automatically generated from commits using GitHub API
 
 #### Using the Release Script
 ```bash

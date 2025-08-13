@@ -16,7 +16,11 @@ A tool to trace from SUSE Observability Agent container tags to the correspondin
 
 1. **Install dependencies:**
    ```bash
+   # CLI only (recommended for servers/CI)
    pip install -r requirements.txt
+   
+   # CLI + GUI (requires PyQt6)
+   pip install -r requirements-gui.txt
    ```
 
 2. **Run the tool:**
@@ -24,7 +28,7 @@ A tool to trace from SUSE Observability Agent container tags to the correspondin
    # CLI mode
    python integrations_finder.py find <agent_sha_or_container_path>
    
-   # GUI mode
+   # GUI mode (requires PyQt6)
    python integrations_finder.py gui
    ```
 
@@ -112,11 +116,24 @@ The tool can extract 8-character git SHAs from various formats:
 - **macOS**: x86_64, aarch64 (Apple Silicon)
 - **Windows**: x86_64
 
+### Icon Support
+
+The build system supports application icons for different platforms:
+- **Linux**: PNG format (automatically handled)
+- **Windows**: ICO format (automatically converted from PNG)
+- **macOS**: ICNS format (when available)
+
+Icons are automatically detected and used based on platform requirements. The `convert_icon.py` script can be used to manually convert formats if needed.
+
+**Note**: Pillow is included in the main requirements to support icon conversion and potential future image processing features.
+
 ### Build Methods
 
 1. **Direct Build**: `python build.py <platform>-<arch>`
 2. **Docker Build**: `./build-docker.sh <platform>-<arch>`
 3. **Makefile**: `make build-<platform>-<arch>`
+
+**Note**: Windows builds use Python's built-in `zipfile` module for packaging, ensuring compatibility across all Windows environments.
 
 ### Quick Build Commands
 
@@ -187,8 +204,8 @@ The project includes GitHub Actions workflows that automatically:
 ### **Release Process**
 1. **Create a tag**: `git tag v1.0.0 && git push origin v1.0.0`
 2. **Automatic build**: GitHub Actions builds all platform executables
-3. **Automatic release**: Creates GitHub release with downloadable packages
-4. **Release notes**: Automatically generated from commits
+3. **Automatic release**: Creates GitHub release with downloadable packages using GitHub CLI
+4. **Release notes**: Automatically generated from commits using GitHub API
 
 ### **Artifacts**
 - **Build artifacts**: Available for 30 days on all builds

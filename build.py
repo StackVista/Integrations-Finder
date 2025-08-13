@@ -2,13 +2,19 @@
 """
 Build script for SUSE Observability Integrations Finder
 Creates cross-platform executables using PyInstaller
+
+Note: Icons are now supported with automatic format detection:
+- Windows: Uses .ico format (converted from PNG)
+- macOS: Uses .icns format (when available)
+- Linux: Uses .png format
+- Pillow is included for automatic conversion
 """
 
 import os
-import sys
 import platform
-import subprocess
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -18,7 +24,7 @@ class Builder:
         self.dist_dir = self.project_root / "dist"
         self.build_dir = self.project_root / "build"
         self.spec_file = self.project_root / "integrations_finder.spec"
-        
+
     def clean(self):
         """Clean build artifacts"""
         print("Cleaning build artifacts...")
@@ -29,12 +35,24 @@ class Builder:
         if self.spec_file.exists():
             self.spec_file.unlink()
         print("Clean complete.")
-    
+
     def create_spec_file(self, target_platform, target_arch):
         """Create PyInstaller spec file for the target platform"""
         print(f"Creating spec file for {target_platform}-{target_arch}...")
-        
-        spec_content = f'''# -*- mode: python ; coding: utf-8 -*-
+
+        # Determine target architecture for PyInstaller
+        target_arch_value = "'arm64'" if target_arch == "aarch64" else "None"
+
+        # Determine icon path based on platform
+        icon_path = None
+        if target_platform == "win":
+            icon_path = "'assets/images/logo.ico'" if Path("assets/images/logo.ico").exists() else None
+        elif target_platform == "macos":
+            icon_path = "'assets/images/logo.icns'" if Path("assets/images/logo.icns").exists() else None
+        else:  # linux
+            icon_path = "'assets/images/logo.png'" if Path("assets/images/logo.png").exists() else None
+
+        spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
 
@@ -49,6 +67,7 @@ a = Analysis(
         'PyQt6.QtCore',
         'PyQt6.QtGui', 
         'PyQt6.QtWidgets',
+        'PyQt6.sip',
         'requests',
         'click',
     ],
@@ -77,10 +96,10 @@ exe = EXE(
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch={target_arch_value},
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/images/logo.png' if '{target_platform}' == 'win' else None,
+    icon={icon_path},
 )
 
 coll = COLLECT(
@@ -99,7 +118,7 @@ if '{target_platform}' == 'macos':
     app = BUNDLE(
         coll,
         name='SUSE Observability Integrations Finder.app',
-        icon='assets/images/logo.png',
+        icon={icon_path},
         bundle_identifier='com.suse.observability.integrations-finder',
         info_plist={{
             'CFBundleName': 'SUSE Observability Integrations Finder',
@@ -109,38 +128,32 @@ if '{target_platform}' == 'macos':
             'NSHighResolutionCapable': True,
         }},
     )
-'''
-        
-        with open(self.spec_file, 'w') as f:
+"""
+
+        with open(self.spec_file, "w") as f:
             f.write(spec_content)
-        
+
         print(f"Spec file created: {self.spec_file}")
-    
+
     def build(self, target_platform, target_arch):
         """Build executable for target platform and architecture"""
         print(f"Building for {target_platform}-{target_arch}...")
-        
+
         # Create spec file
         self.create_spec_file(target_platform, target_arch)
-        
-        # Build command
+
+        # Build command - no need for --target-arch when using spec file
         cmd = [
-            sys.executable, '-m', 'PyInstaller',
-            '--clean',
-            '--noconfirm',
-            str(self.spec_file)
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--clean",
+            "--noconfirm",
+            str(self.spec_file),
         ]
-        
-        # Platform-specific options
-        if target_platform == 'linux':
-            cmd.extend(['--target-arch', target_arch])
-        elif target_platform == 'macos':
-            cmd.extend(['--target-arch', target_arch])
-        elif target_platform == 'win':
-            cmd.extend(['--target-arch', target_arch])
-        
+
         print(f"Running: {' '.join(cmd)}")
-        
+
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             print("Build successful!")
@@ -150,56 +163,78 @@ if '{target_platform}' == 'macos':
             print(f"stdout: {e.stdout}")
             print(f"stderr: {e.stderr}")
             return False
-    
+
     def package(self, target_platform, target_arch):
         """Package the built executable"""
         print(f"Packaging for {target_platform}-{target_arch}...")
-        
+
         source_dir = self.dist_dir / "suse-observability-integrations-finder"
         if not source_dir.exists():
             print(f"Error: Build directory not found: {source_dir}")
             return False
-        
+
         # Create output directory
         output_dir = self.project_root / "packages"
         output_dir.mkdir(exist_ok=True)
-        
+
         # Package based on platform
-        if target_platform == 'linux':
+        if target_platform == "linux":
             # Create tar.gz
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
-            
-            cmd = ['tar', '-czf', str(archive_path), '-C', str(self.dist_dir), 'suse-observability-integrations-finder']
+
+            cmd = [
+                "tar",
+                "-czf",
+                str(archive_path),
+                "-C",
+                str(self.dist_dir),
+                "suse-observability-integrations-finder",
+            ]
             subprocess.run(cmd, check=True)
-            
-        elif target_platform == 'macos':
+
+        elif target_platform == "macos":
             # Create .dmg or .tar.gz
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.tar.gz"
             archive_path = output_dir / archive_name
-            
-            cmd = ['tar', '-czf', str(archive_path), '-C', str(self.dist_dir), 'suse-observability-integrations-finder']
+
+            cmd = [
+                "tar",
+                "-czf",
+                str(archive_path),
+                "-C",
+                str(self.dist_dir),
+                "suse-observability-integrations-finder",
+            ]
             subprocess.run(cmd, check=True)
-            
-        elif target_platform == 'win':
-            # Create zip
+
+        elif target_platform == "win":
+            # Create zip using Python's zipfile module
             archive_name = f"suse-observability-integrations-finder-{target_platform}-{target_arch}.zip"
             archive_path = output_dir / archive_name
-            
-            cmd = ['zip', '-r', str(archive_path), 'suse-observability-integrations-finder']
-            subprocess.run(cmd, cwd=self.dist_dir, check=True)
-        
+
+            import os
+            import zipfile
+
+            with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+                source_dir = self.dist_dir / "suse-observability-integrations-finder"
+                for root, dirs, files in os.walk(source_dir):
+                    for file in files:
+                        file_path = Path(root) / file
+                        arcname = file_path.relative_to(self.dist_dir)
+                        zipf.write(file_path, arcname)
+
         print(f"Package created: {archive_path}")
         return True
 
 
 def main():
     """Main build function"""
-    if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help', 'help']:
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
         print("Usage: python build.py <target>")
         print("Targets:")
         print("  linux-x86_64")
-        print("  linux-aarch64") 
+        print("  linux-aarch64")
         print("  macos-x86_64")
         print("  macos-aarch64")
         print("  win-x86_64")
@@ -209,41 +244,41 @@ def main():
         print("  python build.py linux-x86_64")
         print("  python build.py all")
         sys.exit(1)
-    
+
     target = sys.argv[1]
     builder = Builder()
-    
+
     targets = {
-        'linux-x86_64': ('linux', 'x86_64'),
-        'linux-aarch64': ('linux', 'aarch64'),
-        'macos-x86_64': ('macos', 'x86_64'),
-        'macos-aarch64': ('macos', 'aarch64'),
-        'win-x86_64': ('win', 'x86_64'),
+        "linux-x86_64": ("linux", "x86_64"),
+        "linux-aarch64": ("linux", "aarch64"),
+        "macos-x86_64": ("macos", "x86_64"),
+        "macos-aarch64": ("macos", "aarch64"),
+        "win-x86_64": ("win", "x86_64"),
     }
-    
-    if target == 'all':
+
+    if target == "all":
         build_targets = targets.values()
     elif target in targets:
         build_targets = [targets[target]]
     else:
         print(f"Unknown target: {target}")
         sys.exit(1)
-    
+
     # Clean first
     builder.clean()
-    
+
     # Build each target
     for platform_name, arch in build_targets:
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print(f"Building {platform_name}-{arch}")
-        print(f"{'='*50}")
-        
+        print(f"{'=' * 50}")
+
         if builder.build(platform_name, arch):
             builder.package(platform_name, arch)
         else:
             print(f"Failed to build {platform_name}-{arch}")
             sys.exit(1)
-    
+
     print("\nAll builds completed successfully!")
 
 

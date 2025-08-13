@@ -2,9 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
   test:
@@ -24,21 +22,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run tests
+    - name: Run CI tests
       run: |
-        python test_finder.py
-
-    - name: Test CLI help
-      run: |
-        python integrations_finder.py --help
-
-    - name: Test demo
-      run: |
-        python demo.py
-
-    - name: Verify imports
-      run: |
-        python -c "from integrations_finder import IntegrationsFinder; print('✅ All imports successful')"
+        python test_ci.py
 
   lint:
     runs-on: ubuntu-latest
