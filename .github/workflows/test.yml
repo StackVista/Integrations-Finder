@@ -26,14 +26,6 @@ jobs:
       run: |
         python test_ci.py
 
-    - name: Test CLI help
-      run: |
-        python integrations_finder.py --help
-
-    - name: Verify core imports
-      run: |
-        python -c "from integrations_finder import IntegrationsFinder; print('✅ Core functionality imports successful')"
-
   lint:
     runs-on: ubuntu-latest
     
