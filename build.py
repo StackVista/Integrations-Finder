@@ -34,6 +34,9 @@ class Builder:
         """Create PyInstaller spec file for the target platform"""
         print(f"Creating spec file for {target_platform}-{target_arch}...")
 
+        # Determine target architecture for PyInstaller
+        target_arch_value = "'arm64'" if target_arch == "aarch64" else "None"
+
         spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
@@ -77,7 +80,7 @@ exe = EXE(
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch={target_arch_value},
     codesign_identity=None,
     entitlements_file=None,
     icon='assets/images/logo.png' if '{target_platform}' == 'win' else None,
@@ -123,7 +126,7 @@ if '{target_platform}' == 'macos':
         # Create spec file
         self.create_spec_file(target_platform, target_arch)
 
-        # Build command
+        # Build command - no need for --target-arch when using spec file
         cmd = [
             sys.executable,
             "-m",
@@ -132,14 +135,6 @@ if '{target_platform}' == 'macos':
             "--noconfirm",
             str(self.spec_file),
         ]
-
-        # Platform-specific options
-        if target_platform == "linux":
-            cmd.extend(["--target-arch", target_arch])
-        elif target_platform == "macos":
-            cmd.extend(["--target-arch", target_arch])
-        elif target_platform == "win":
-            cmd.extend(["--target-arch", target_arch])
 
         print(f"Running: {' '.join(cmd)}")
 
