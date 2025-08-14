@@ -75,7 +75,6 @@ jobs:
         docker buildx build \
           --platform linux/amd64 \
           --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
-          --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-amd64 \
           --push \
           .
         
@@ -83,9 +82,24 @@ jobs:
         docker buildx build \
           --platform linux/arm64 \
           --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64 \
-          --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-arm64 \
           --push \
           .
+        
+        # Add version tags if this is a release (tag push)
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION_TAG="${{ github.ref_name }}"
+          echo "Creating version tags: $VERSION_TAG"
+          
+          # Tag amd64 image with version
+          docker tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64
+          docker push ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64
+          
+          # Tag arm64 image with version
+          docker tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+          docker push ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+        fi
 
     - name: Create multi-architecture manifest
       if: github.event_name != 'pull_request'
@@ -95,10 +109,14 @@ jobs:
           ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
           ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64
         
-        # Create manifest with branch/tag name
-        docker buildx imagetools create -t ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }} \
-          ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-amd64 \
-          ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-arm64
+        # Create manifest with version tag if this is a release
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION_TAG="${{ github.ref_name }}"
+          echo "Creating version manifest: $VERSION_TAG"
+          docker buildx imagetools create -t ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+        fi
 
     - name: Show image info
       run: |

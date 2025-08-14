@@ -119,25 +119,23 @@ create_manifest() {
     build_architecture "amd64"
     build_architecture "arm64"
     
-    # Create manifest with git SHA
-    print_status "Creating manifest with tag: ${GIT_SHA}"
+    # Prepare tags
+    local tags="--tag ${IMAGE_NAME}:${GIT_SHA}"
+    
+    # Add version tag if this is a release
+    if [[ -n "${GIT_TAG}" ]]; then
+        print_status "Adding version tag: ${GIT_TAG}"
+        tags="${tags} --tag ${IMAGE_NAME}:${GIT_TAG}"
+    fi
+    
+    # Create manifest
+    print_status "Creating manifest with tags: ${GIT_SHA}${GIT_TAG:+ and ${GIT_TAG}}"
     docker buildx build \
         --platform linux/amd64,linux/arm64 \
-        --tag ${IMAGE_NAME}:${GIT_SHA} \
+        ${tags} \
         --file Dockerfile \
         --push \
         .
-    
-    # Create manifest with version tag if this is a release
-    if [[ -n "${GIT_TAG}" ]]; then
-        print_status "Creating release manifest with tag: ${GIT_TAG}"
-        docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --tag ${IMAGE_NAME}:${GIT_TAG} \
-            --file Dockerfile \
-            --push \
-            .
-    fi
 }
 
 # Push individual architecture images
@@ -164,28 +162,22 @@ push_architectures() {
 build_and_push() {
     print_step "Building and pushing all images..."
     
-    # Build for both architectures and create manifest
-    docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        --tag ${IMAGE_NAME}:${GIT_SHA} \
-        --tag ${IMAGE_NAME}:${GIT_SHA}-amd64 \
-        --tag ${IMAGE_NAME}:${GIT_SHA}-arm64 \
-        --file Dockerfile \
-        --push \
-        .
+    # Prepare tags
+    local tags="--tag ${IMAGE_NAME}:${GIT_SHA} --tag ${IMAGE_NAME}:${GIT_SHA}-amd64 --tag ${IMAGE_NAME}:${GIT_SHA}-arm64"
     
     # Add version tags if this is a release
     if [[ -n "${GIT_TAG}" ]]; then
         print_status "Adding version tags..."
-        docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --tag ${IMAGE_NAME}:${GIT_TAG} \
-            --tag ${IMAGE_NAME}:${GIT_TAG}-amd64 \
-            --tag ${IMAGE_NAME}:${GIT_TAG}-arm64 \
-            --file Dockerfile \
-            --push \
-            .
+        tags="${tags} --tag ${IMAGE_NAME}:${GIT_TAG} --tag ${IMAGE_NAME}:${GIT_TAG}-amd64 --tag ${IMAGE_NAME}:${GIT_TAG}-arm64"
     fi
+    
+    # Build for both architectures and create manifest
+    docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        ${tags} \
+        --file Dockerfile \
+        --push \
+        .
 }
 
 # Build only (no push)
@@ -196,14 +188,17 @@ build_only() {
     build_architecture "amd64"
     build_architecture "arm64"
     
-    # Create local manifest
-    print_status "Creating local manifest..."
-    docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        --tag ${IMAGE_NAME}:${GIT_SHA} \
-        --file Dockerfile \
-        --load \
-        .
+    # Note: Cannot create multi-arch manifest locally with --load
+    # Individual architecture images are already built and loaded
+    print_status "Individual architecture images built and loaded locally"
+    print_status "Available images:"
+    print_status "  ${IMAGE_NAME}:${GIT_SHA}-amd64"
+    print_status "  ${IMAGE_NAME}:${GIT_SHA}-arm64"
+    
+    if [[ -n "${GIT_TAG}" ]]; then
+        print_status "  ${IMAGE_NAME}:${GIT_TAG}-amd64"
+        print_status "  ${IMAGE_NAME}:${GIT_TAG}-arm64"
+    fi
 }
 
 # Clean up Docker images
