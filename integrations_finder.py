@@ -322,6 +322,7 @@ Click the integrations URL above to view the source code."""
 
 
 if PYQT6_AVAILABLE:
+
     class WorkerThread(QThread):
         """Worker thread for GUI to prevent blocking."""
 
@@ -346,6 +347,7 @@ if PYQT6_AVAILABLE:
                 message += "\n[BRANCH_VERSION_DETECTED]"
 
             self.finished.emit(success, message)
+
 else:
     # Dummy class for when PyQt6 is not available
     class WorkerThread:
