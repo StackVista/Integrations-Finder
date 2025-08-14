@@ -4,7 +4,7 @@
 .PHONY: help clean install-deps install-system-deps build-all package-all \
         build-linux-x86_64 build-linux-aarch64 build-macos-x86_64 build-macos-aarch64 build-win-x86_64 \
         package-linux-x86_64 package-linux-aarch64 package-macos-x86_64 package-macos-aarch64 package-win-x86_64 \
-        deb-linux-x86_64 deb-linux-aarch64 rpm-linux-x86_64 rpm-linux-aarch64 \
+        deb-linux-x86_64 deb-linux-aarch64 \
         msi-win-x86_64 pkg-macos-x86_64 pkg-macos-aarch64 \
         docker-build docker-push docker-amd64 docker-arm64 docker-cleanup \
         test run-gui run-cli
@@ -27,8 +27,8 @@ help:
 	@echo ""
 	@echo "Package Targets:"
 	@echo "  package-all          - Build and package for all platforms"
-	@echo "  package-linux-x86_64 - Build and package Linux x86_64 (.tar.gz, .deb, .rpm)"
-	@echo "  package-linux-aarch64- Build and package Linux aarch64 (.tar.gz, .deb, .rpm)"
+	@echo "  package-linux-x86_64 - Build and package Linux x86_64 (.tar.gz, .deb)"
+	@echo "  package-linux-aarch64- Build and package Linux aarch64 (.tar.gz, .deb)"
 	@echo "  package-macos-x86_64 - Build and package macOS x86_64 (.tar.gz, .pkg)"
 	@echo "  package-macos-aarch64- Build and package macOS aarch64 (.tar.gz, .pkg)"
 	@echo "  package-win-x86_64   - Build and package Windows x86_64 (.zip, .msi)"
@@ -43,8 +43,6 @@ help:
 	@echo "Individual Package Targets:"
 	@echo "  deb-linux-x86_64     - Create .deb package for Linux x86_64"
 	@echo "  deb-linux-aarch64    - Create .deb package for Linux aarch64"
-	@echo "  rpm-linux-x86_64     - Create .rpm package for Linux x86_64"
-	@echo "  rpm-linux-aarch64    - Create .rpm package for Linux aarch64"
 	@echo "  msi-win-x86_64       - Create .msi package for Windows x86_64"
 	@echo "  pkg-macos-x86_64     - Create .pkg package for macOS x86_64"
 	@echo "  pkg-macos-aarch64    - Create .pkg package for macOS aarch64"
@@ -74,7 +72,7 @@ install-deps:
 install-system-deps:
 	@echo "Installing system packaging tools..."
 	@if [ "$$(uname)" = "Linux" ]; then \
-		sudo apt-get update && sudo apt-get install -y dpkg-dev rpm rpm-build; \
+		sudo apt-get update && sudo apt-get install -y dpkg-dev; \
 		echo "System packaging tools installed."; \
 	else \
 		echo "System packaging tools installation skipped (not on Linux)"; \
@@ -150,14 +148,7 @@ deb-linux-aarch64: build-linux-aarch64
 	@echo "Creating .deb package for Linux aarch64..."
 	@python3 build.py linux-aarch64 --create-deb-only
 
-# Linux .rpm packages
-rpm-linux-x86_64: build-linux-x86_64
-	@echo "Creating .rpm package for Linux x86_64..."
-	@python3 build.py linux-x86_64 --create-rpm-only
 
-rpm-linux-aarch64: build-linux-aarch64
-	@echo "Creating .rpm package for Linux aarch64..."
-	@python3 build.py linux-aarch64 --create-rpm-only
 
 # Windows .msi package
 msi-win-x86_64: build-win-x86_64
@@ -232,7 +223,6 @@ info:
 	@echo ""
 	@echo "Available build tools:"
 	@command -v dpkg-deb >/dev/null 2>&1 && echo "✓ dpkg-deb (for .deb packages)" || echo "✗ dpkg-deb (for .deb packages)"
-	@command -v rpmbuild >/dev/null 2>&1 && echo "✓ rpmbuild (for .rpm packages)" || echo "✗ rpmbuild (for .rpm packages)"
 	@command -v pkgbuild >/dev/null 2>&1 && echo "✓ pkgbuild (for .pkg packages)" || echo "✗ pkgbuild (for .pkg packages)"
 	@command -v candle >/dev/null 2>&1 && echo "✓ WiX candle (for .msi packages)" || echo "✗ WiX candle (for .msi packages)"
 	@command -v light >/dev/null 2>&1 && echo "✓ WiX light (for .msi packages)" || echo "✗ WiX light (for .msi packages)"

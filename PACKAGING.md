@@ -18,11 +18,7 @@ The Agent Integrations Finder build system creates multiple package formats for 
   - Installs executable to `/usr/local/bin/agent-integrations-finder`
   - Dependencies in `/usr/local/bin/_internal/`
 
-- **`.rpm`**: Red Hat/Fedora/CentOS package for easy installation
-  - `agent-integrations-finder-1.0.0-1.x86_64.rpm`
-  - `agent-integrations-finder-1.0.0-1.aarch64.rpm`
-  - Installs executable to `/usr/local/bin/agent-integrations-finder`
-  - Dependencies in `/usr/local/bin/_internal/`
+
 
 ### Windows Packages
 
@@ -60,10 +56,7 @@ The Agent Integrations Finder build system creates multiple package formats for 
 sudo dpkg -i agent-integrations-finder_1.0.0_amd64.deb
 ```
 
-#### Using .rpm package (Red Hat/Fedora/CentOS)
-```bash
-sudo rpm -i agent-integrations-finder-1.0.0-1.x86_64.rpm
-```
+
 
 #### Using .tar.gz archive
 ```bash

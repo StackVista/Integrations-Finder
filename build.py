@@ -242,93 +242,6 @@ Description: Agent Integrations Finder
             # Clean up
             shutil.rmtree(temp_dir)
 
-    def create_rpm_package(self, target_platform, target_arch, source_dir, output_dir):
-        """Create .rpm package for Red Hat/Fedora/CentOS"""
-        print("Creating .rpm package...")
-
-        # Create package structure
-        package_name = "agent-integrations-finder"
-        package_version = "1.0.0"
-        rpm_name = f"{package_name}-{package_version}-1.{target_arch}.rpm"
-        rpm_path = output_dir / rpm_name
-
-        # Create temporary directory structure
-        temp_dir = self.project_root / "temp_rpm"
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-        temp_dir.mkdir()
-
-        # Create RPM build structure
-        rpm_build_dir = temp_dir / "rpmbuild"
-        rpm_build_dir.mkdir()
-
-        # Create SPEC file
-        spec_content = f"""Name: {package_name}
-Version: {package_version}
-Release: 1
-Summary: Agent Integrations Finder
-License: BSD-3-Clause
-URL: https://github.com/StackVista/Integrations-Finder
-BuildArch: {target_arch}
-
-%description
-A tool to trace from SUSE Observability Agent container tags to the corresponding integrations source code.
-Provides both CLI and GUI interfaces for finding integration source code.
-
-%files
-%defattr(-,root,root,-)
-/usr/local/bin/agent-integrations-finder
-/usr/local/lib/{package_name}/
-
-%post
-chmod +x /usr/local/bin/agent-integrations-finder
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-"""
-
-        spec_file = temp_dir / f"{package_name}.spec"
-        with open(spec_file, "w") as f:
-            f.write(spec_content)
-
-        # Create buildroot structure
-        buildroot = rpm_build_dir / "BUILDROOT" / f"{package_name}-{package_version}-1.{target_arch}"
-        buildroot.mkdir(parents=True)
-
-        # Copy files to buildroot
-        bin_dir = buildroot / "usr" / "local" / "bin"
-        bin_dir.mkdir(parents=True)
-
-        executable = source_dir / "agent-integrations-finder"
-        if executable.exists():
-            shutil.copy2(executable, bin_dir / "agent-integrations-finder")
-            os.chmod(bin_dir / "agent-integrations-finder", 0o755)
-
-        lib_dir = buildroot / "usr" / "local" / "lib" / package_name
-        lib_dir.mkdir(parents=True)
-
-        internal_dir = source_dir / "_internal"
-        if internal_dir.exists():
-            shutil.copytree(internal_dir, lib_dir / "_internal")
-
-        # Try to build RPM using rpmbuild
-        try:
-            cmd = ["rpmbuild", "--define", f"_topdir {rpm_build_dir}", "-bb", str(spec_file)]
-            subprocess.run(cmd, check=True)
-
-            # Find and copy the built RPM
-            rpm_dir = rpm_build_dir / "RPMS" / target_arch
-            if rpm_dir.exists():
-                for rpm_file in rpm_dir.glob("*.rpm"):
-                    shutil.copy2(rpm_file, rpm_path)
-                    print(f"Created .rpm package: {rpm_path}")
-                    break
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("Warning: rpmbuild not available, skipping .rpm package creation")
-        finally:
-            # Clean up
-            shutil.rmtree(temp_dir)
-
     def create_msi_package(self, target_platform, target_arch, source_dir, output_dir):
         """Create .msi package for Windows"""
         print("Creating .msi package...")
@@ -519,7 +432,6 @@ chmod +x /usr/local/bin/agent-integrations-finder
         # Create system packages first
         if target_platform == "linux":
             self.create_deb_package(target_platform, target_arch, source_dir, output_dir)
-            self.create_rpm_package(target_platform, target_arch, source_dir, output_dir)
         elif target_platform == "win":
             self.create_msi_package(target_platform, target_arch, source_dir, output_dir)
         elif target_platform == "macos":
@@ -595,7 +507,6 @@ def main():
         print("")
         print("Options:")
         print("  --create-deb-only    - Create only .deb package (Linux)")
-        print("  --create-rpm-only    - Create only .rpm package (Linux)")
         print("  --create-msi-only    - Create only .msi package (Windows)")
         print("  --create-pkg-only    - Create only .pkg package (macOS)")
         print("")
@@ -611,7 +522,6 @@ def main():
 
     # Check for package-only options
     create_deb_only = "--create-deb-only" in sys.argv
-    create_rpm_only = "--create-rpm-only" in sys.argv
     create_msi_only = "--create-msi-only" in sys.argv
     create_pkg_only = "--create-pkg-only" in sys.argv
 
@@ -661,13 +571,7 @@ def main():
                     builder.get_platform_dist_dir(platform_name, arch) / "agent-integrations-finder",
                     builder.project_root / "packages",
                 )
-            elif create_rpm_only and platform_name == "linux":
-                builder.create_rpm_package(
-                    platform_name,
-                    arch,
-                    builder.get_platform_dist_dir(platform_name, arch) / "agent-integrations-finder",
-                    builder.project_root / "packages",
-                )
+
             elif create_msi_only and platform_name == "win":
                 builder.create_msi_package(
                     platform_name,

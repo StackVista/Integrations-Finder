@@ -50,7 +50,7 @@ jobs:
         # Install system package tools based on platform
         if [ "${{ matrix.platform }}" = "linux" ]; then
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev rpm rpm-build
+          sudo apt-get install -y dpkg-dev
         elif [ "${{ matrix.platform }}" = "win" ]; then
           # WiX tools would need to be installed here for Windows MSI creation
           echo "WiX tools installation would go here for MSI creation"
