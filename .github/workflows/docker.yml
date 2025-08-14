@@ -1,0 +1,116 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  REPO: stackvista/agent-integrations-finder
+  IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.REPO }}
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r build_requirements.txt
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build individual architecture images
+      if: github.event_name != 'pull_request'
+      run: |
+        # Build amd64 image
+        docker buildx build \
+          --platform linux/amd64 \
+          --tag ${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64 \
+          --tag ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
+          --push \
+          .
+        
+        # Build arm64 image
+        docker buildx build \
+          --platform linux/arm64 \
+          --tag ${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64 \
+          --tag ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64 \
+          --push \
+          .
+
+    - name: Create multi-architecture manifest
+      if: github.event_name != 'pull_request'
+      run: |
+        # Create manifest with git SHA
+        docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          ${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64 \
+          ${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64
+        
+        # Create manifest with branch/tag name
+        docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+          ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
+          ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
+
+    - name: Show image info
+      run: |
+        echo "Built images:"
+        docker images ${{ env.IMAGE_NAME }} || true
+        echo ""
+        echo "Available tags:"
+        echo "- ${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        echo "- ${{ env.IMAGE_NAME }}:${{ github.sha }}-amd64"
+        echo "- ${{ env.IMAGE_NAME }}:${{ github.sha }}-arm64"
+        if [[ "${{ github.ref_name }}" != "${{ github.sha }}" ]]; then
+          echo "- ${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+          echo "- ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64"
+          echo "- ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64"
+        fi

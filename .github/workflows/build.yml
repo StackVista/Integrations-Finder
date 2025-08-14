@@ -46,6 +46,18 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r build_requirements.txt
+        
+        # Install system package tools based on platform
+        if [ "${{ matrix.platform }}" = "linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev rpm rpm-build
+        elif [ "${{ matrix.platform }}" = "win" ]; then
+          # WiX tools would need to be installed here for Windows MSI creation
+          echo "WiX tools installation would go here for MSI creation"
+        elif [ "${{ matrix.platform }}" = "macos" ]; then
+          # pkgbuild is available by default on macOS
+          echo "pkgbuild is available by default on macOS"
+        fi
 
     - name: Build executable
       run: |
