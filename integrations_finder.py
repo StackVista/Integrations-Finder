@@ -13,21 +13,28 @@ from typing import Optional, Tuple
 
 import click
 import requests
-from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
-from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
-from PyQt6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
+
+# Import PyQt6 only when needed for GUI functionality
+try:
+    from PyQt6.QtCore import Qt, QThread, QUrl, pyqtSignal
+    from PyQt6.QtGui import QDesktopServices, QFont, QPixmap
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QHBoxLayout,
+        QLabel,
+        QLineEdit,
+        QMainWindow,
+        QMessageBox,
+        QProgressBar,
+        QPushButton,
+        QTextEdit,
+        QVBoxLayout,
+        QWidget,
+    )
+
+    PYQT6_AVAILABLE = True
+except ImportError:
+    PYQT6_AVAILABLE = False
 
 
 class IntegrationsFinder:
@@ -314,39 +321,56 @@ Click the integrations URL above to view the source code."""
         return True, success_message, is_branch
 
 
-class WorkerThread(QThread):
-    """Worker thread for GUI to prevent blocking."""
+if PYQT6_AVAILABLE:
 
-    finished = pyqtSignal(bool, str)
+    class WorkerThread(QThread):
+        """Worker thread for GUI to prevent blocking."""
 
-    def __init__(self, finder: IntegrationsFinder, input_string: str):
-        super().__init__()
-        self.finder = finder
-        self.input_string = input_string
+        finished = pyqtSignal(bool, str)
 
-    def run(self):
-        result = self.finder.find_integrations(self.input_string)
-        if len(result) == 3:
-            success, message, is_branch = result
-        else:
-            # Backward compatibility
-            success, message = result
-            is_branch = False
+        def __init__(self, finder: IntegrationsFinder, input_string: str):
+            super().__init__()
+            self.finder = finder
+            self.input_string = input_string
 
-        # Add branch indicator to message for GUI detection
-        if is_branch:
-            message += "\n[BRANCH_VERSION_DETECTED]"
+        def run(self):
+            result = self.finder.find_integrations(self.input_string)
+            if len(result) == 3:
+                success, message, is_branch = result
+            else:
+                # Backward compatibility
+                success, message = result
+                is_branch = False
 
-        self.finished.emit(success, message)
+            # Add branch indicator to message for GUI detection
+            if is_branch:
+                message += "\n[BRANCH_VERSION_DETECTED]"
+
+            self.finished.emit(success, message)
+
+else:
+    # Dummy class for when PyQt6 is not available
+    class WorkerThread:
+        def __init__(self, finder: IntegrationsFinder, input_string: str):
+            self.finder = finder
+            self.input_string = input_string
 
 
-class IntegrationsFinderGUI(QMainWindow):
-    """GUI for the Agent Integrations Finder tool."""
+if PYQT6_AVAILABLE:
 
-    def __init__(self):
-        super().__init__()
-        self.finder = IntegrationsFinder()
-        self.init_ui()
+    class IntegrationsFinderGUI(QMainWindow):
+        """GUI for the Agent Integrations Finder tool."""
+
+        def __init__(self):
+            super().__init__()
+            self.finder = IntegrationsFinder()
+            self.init_ui()
+
+else:
+    # Dummy class for when PyQt6 is not available
+    class IntegrationsFinderGUI:
+        def __init__(self):
+            pass
 
     def init_ui(self):
         """Initialize the user interface."""
@@ -578,6 +602,11 @@ def find(input_string):
 @cli.command()
 def gui():
     """Launch the graphical user interface."""
+    if not PYQT6_AVAILABLE:
+        click.echo("Error: PyQt6 is not available. GUI mode requires PyQt6 to be installed.")
+        click.echo("Please install PyQt6 with: pip install PyQt6")
+        sys.exit(1)
+
     app = QApplication(sys.argv)
     window = IntegrationsFinderGUI()
     window.show()

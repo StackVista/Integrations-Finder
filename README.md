@@ -34,9 +34,47 @@ A tool to trace from SUSE Observability Agent container tags to the correspondin
 
 ### Option 2: Use Pre-built Executables
 
-Download the latest release from the [Releases page](https://github.com/StackVista/stackstate-agent-integrations/releases) and extract the appropriate package for your platform.
+Download the latest release from the [Releases page](https://github.com/StackVista/stackstate-agent-integrations/releases) and choose the appropriate package for your platform:
+
+#### Archive Packages (Portable)
+- **Linux**: `agent-integrations-finder-linux-x86_64.tar.gz` or `agent-integrations-finder-linux-aarch64.tar.gz`
+- **Windows**: `agent-integrations-finder-win-x86_64.zip`
+- **macOS**: `agent-integrations-finder-macos-x86_64.tar.gz` or `agent-integrations-finder-macos-aarch64.tar.gz`
+
+#### System Packages (Easy Installation)
+- **Linux (Debian/Ubuntu)**: `agent-integrations-finder_1.0.0_amd64.deb`
+- **Linux (Red Hat/Fedora)**: `agent-integrations-finder-1.0.0-1.x86_64.rpm`
+- **Windows**: `agent-integrations-finder-1.0.0-x86_64.msi`
+- **macOS**: `agent-integrations-finder-1.0.0-x86_64.pkg`
+
+For detailed installation instructions, see [PACKAGING.md](PACKAGING.md).
 
 ## Installation
+
+### Using Docker (Recommended)
+The easiest way to run Agent Integrations Finder is using Docker:
+
+```bash
+# Pull and run the latest version
+docker run --rm ghcr.io/stackvista/agent-integrations-finder:latest --help
+
+# Run with a specific version
+docker run --rm ghcr.io/stackvista/agent-integrations-finder:v1.0.0 --help
+
+# Run GUI (requires X11 forwarding on Linux/macOS)
+docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
+  ghcr.io/stackvista/agent-integrations-finder:latest gui
+
+# Run CLI with specific SHA
+docker run --rm ghcr.io/stackvista/agent-integrations-finder:latest find a1b2c3d4
+```
+
+**Available Docker Images:**
+- `ghcr.io/stackvista/agent-integrations-finder:latest` - Latest stable version
+- `ghcr.io/stackvista/agent-integrations-finder:v1.0.0` - Specific version
+- `ghcr.io/stackvista/agent-integrations-finder:<git-sha>` - Specific commit
+- `ghcr.io/stackvista/agent-integrations-finder:<git-sha>-amd64` - AMD64 architecture only
+- `ghcr.io/stackvista/agent-integrations-finder:<git-sha>-arm64` - ARM64 architecture only
 
 ### From Source
 
@@ -132,6 +170,33 @@ Icons are automatically detected and used based on platform requirements. The `c
 1. **Direct Build**: `python build.py <platform>-<arch>`
 2. **Docker Build**: `./build-docker.sh <platform>-<arch>`
 3. **Makefile**: `make build-<platform>-<arch>`
+4. **Docker Images**: `make docker-build` or `./docker-build.sh build`
+
+### Docker Build System
+
+The project includes a comprehensive Docker build system for creating multi-architecture container images:
+
+```bash
+# Build Docker images for all architectures (local)
+make docker-build
+
+# Build and push to GitHub Container Registry
+make docker-push
+
+# Build specific architecture
+make docker-amd64
+make docker-arm64
+
+# Clean up Docker images
+make docker-cleanup
+```
+
+**Docker Build Features:**
+- Multi-architecture support (AMD64, ARM64)
+- Automatic tagging with git SHA and version tags
+- GitHub Container Registry integration
+- Multi-architecture manifests
+- Build caching for faster builds
 
 **Note**: Windows builds use Python's built-in `zipfile` module for packaging, ensuring compatibility across all Windows environments.
 

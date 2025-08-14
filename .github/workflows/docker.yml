@@ -1,0 +1,134 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  REPO: stackvista/agent-integrations-finder
+  IMAGE_NAME: ghcr.io/stackvista/agent-integrations-finder
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/stackvista/agent-integrations-finder
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r build_requirements.txt
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build individual architecture images
+      if: github.event_name != 'pull_request'
+      run: |
+        # Build amd64 image
+        docker buildx build \
+          --platform linux/amd64 \
+          --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
+          --push \
+          .
+        
+        # Build arm64 image
+        docker buildx build \
+          --platform linux/arm64 \
+          --tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64 \
+          --push \
+          .
+        
+        # Add version tags if this is a release (tag push)
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION_TAG="${{ github.ref_name }}"
+          echo "Creating version tags: $VERSION_TAG"
+          
+          # Tag amd64 image with version
+          docker tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64
+          docker push ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64
+          
+          # Tag arm64 image with version
+          docker tag ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+          docker push ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+        fi
+
+    - name: Create multi-architecture manifest
+      if: github.event_name != 'pull_request'
+      run: |
+        # Create manifest with git SHA
+        docker buildx imagetools create -t ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }} \
+          ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64 \
+          ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64
+        
+        # Create manifest with version tag if this is a release
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          VERSION_TAG="${{ github.ref_name }}"
+          echo "Creating version manifest: $VERSION_TAG"
+          docker buildx imagetools create -t ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-amd64 \
+            ghcr.io/stackvista/agent-integrations-finder:$VERSION_TAG-arm64
+        fi
+
+    - name: Show image info
+      run: |
+        echo "Built images:"
+        docker images ghcr.io/stackvista/agent-integrations-finder || true
+        echo ""
+        echo "Available tags:"
+        echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}"
+        echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-amd64"
+        echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.sha }}-arm64"
+        if [[ "${{ github.ref_name }}" != "${{ github.sha }}" ]]; then
+          echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}"
+          echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-amd64"
+          echo "- ghcr.io/stackvista/agent-integrations-finder:${{ github.ref_name }}-arm64"
+        fi
