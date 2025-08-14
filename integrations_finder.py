@@ -321,30 +321,37 @@ Click the integrations URL above to view the source code."""
         return True, success_message, is_branch
 
 
-class WorkerThread(QThread):
-    """Worker thread for GUI to prevent blocking."""
+if PYQT6_AVAILABLE:
+    class WorkerThread(QThread):
+        """Worker thread for GUI to prevent blocking."""
 
-    finished = pyqtSignal(bool, str)
+        finished = pyqtSignal(bool, str)
 
-    def __init__(self, finder: IntegrationsFinder, input_string: str):
-        super().__init__()
-        self.finder = finder
-        self.input_string = input_string
+        def __init__(self, finder: IntegrationsFinder, input_string: str):
+            super().__init__()
+            self.finder = finder
+            self.input_string = input_string
 
-    def run(self):
-        result = self.finder.find_integrations(self.input_string)
-        if len(result) == 3:
-            success, message, is_branch = result
-        else:
-            # Backward compatibility
-            success, message = result
-            is_branch = False
+        def run(self):
+            result = self.finder.find_integrations(self.input_string)
+            if len(result) == 3:
+                success, message, is_branch = result
+            else:
+                # Backward compatibility
+                success, message = result
+                is_branch = False
 
-        # Add branch indicator to message for GUI detection
-        if is_branch:
-            message += "\n[BRANCH_VERSION_DETECTED]"
+            # Add branch indicator to message for GUI detection
+            if is_branch:
+                message += "\n[BRANCH_VERSION_DETECTED]"
 
-        self.finished.emit(success, message)
+            self.finished.emit(success, message)
+else:
+    # Dummy class for when PyQt6 is not available
+    class WorkerThread:
+        def __init__(self, finder: IntegrationsFinder, input_string: str):
+            self.finder = finder
+            self.input_string = input_string
 
 
 if PYQT6_AVAILABLE:
