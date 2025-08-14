@@ -162,22 +162,28 @@ push_architectures() {
 build_and_push() {
     print_step "Building and pushing all images..."
     
-    # Prepare tags
-    local tags="--tag ${IMAGE_NAME}:${GIT_SHA} --tag ${IMAGE_NAME}:${GIT_SHA}-amd64 --tag ${IMAGE_NAME}:${GIT_SHA}-arm64"
+    # Build for both architectures and create manifest
+    docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --tag ${IMAGE_NAME}:${GIT_SHA} \
+        --tag ${IMAGE_NAME}:${GIT_SHA}-amd64 \
+        --tag ${IMAGE_NAME}:${GIT_SHA}-arm64 \
+        --file Dockerfile \
+        --push \
+        .
     
     # Add version tags if this is a release
     if [[ -n "${GIT_TAG}" ]]; then
         print_status "Adding version tags..."
-        tags="${tags} --tag ${IMAGE_NAME}:${GIT_TAG} --tag ${IMAGE_NAME}:${GIT_TAG}-amd64 --tag ${IMAGE_NAME}:${GIT_TAG}-arm64"
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ${IMAGE_NAME}:${GIT_TAG} \
+            --tag ${IMAGE_NAME}:${GIT_TAG}-amd64 \
+            --tag ${IMAGE_NAME}:${GIT_TAG}-arm64 \
+            --file Dockerfile \
+            --push \
+            .
     fi
-    
-    # Build for both architectures and create manifest
-    docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        ${tags} \
-        --file Dockerfile \
-        --push \
-        .
 }
 
 # Build only (no push)
